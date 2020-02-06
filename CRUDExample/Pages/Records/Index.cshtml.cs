@@ -11,18 +11,23 @@ namespace CRUDExample
 {
     public class IndexModel : PageModel
     {
-        private readonly CRUDExample.Models.JournalDbContext _context;
+        private readonly JournalDbContext _context;
 
-        public IndexModel(CRUDExample.Models.JournalDbContext context)
+        public IndexModel(JournalDbContext context)
         {
             _context = context;
         }
 
-        public IList<DailyRecord> DailyRecord { get;set; }
+        public IList<DailyRecord> DailyRecord { get; set; }
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(int? year = null, int? month = null)
         {
-            DailyRecord = await _context.Records.ToListAsync();
+            year = year ?? DateTime.Today.Year;
+            // C# 8.0
+            month ??= DateTime.Today.Month;
+            var startDate = new DateTime(year.Value, month.Value, 1);
+
+            DailyRecord = await _context.Records.Where(x => x.Date >= startDate && x.Date < startDate.AddMonths(1)).OrderBy(x => x.Date).ToListAsync();
         }
     }
 }
