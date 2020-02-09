@@ -47,23 +47,27 @@ namespace CRUDExample
                 return Page();
             }
 
-            _context.Attach(DailyRecord).State = EntityState.Modified;
+            // Razor Page Scaffolding
+            //_context.Attach(DailyRecord).State = EntityState.Modified;
 
-            try
+            // 由資料庫取得修改前資料
+            var origin = _context.Records.SingleOrDefault(o => o.Id == DailyRecord.Id);
+            if (origin == null) return NotFound();
+
+            // 檢查日期是否被更動，若是則拒絕更新 早於:<0 等於=0 晚於>0
+            if (origin.Date.CompareTo(DailyRecord.Date) != 0)
             {
-                await _context.SaveChangesAsync();
+                ModelState.AddModelError("DailyRecord.Date", "日期不可修改");
+                return Page();
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DailyRecordExists(DailyRecord.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+
+            // 正向表列方式更新欄位，只更新有異動的部分
+            origin.Status = DailyRecord.Status;
+            origin.EventSummary = DailyRecord.EventSummary;
+            origin.Remark = DailyRecord.Remark;
+            origin.User = DailyRecord.User;
+
+            await _context.SaveChangesAsync();
 
             return RedirectToPage("./Index");
         }
